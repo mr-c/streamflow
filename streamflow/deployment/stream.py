@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio.subprocess
 from abc import ABC
 from collections.abc import Coroutine
+from types import TracebackType
 from typing import Any, AsyncContextManager
 
 from streamflow.core.data import StreamWrapper
@@ -65,7 +66,12 @@ class SubprocessStreamReaderWrapperContextManager(
         self.stream = StreamReaderWrapper(self.proc.stdout)
         return self.stream
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         await self.proc.wait()
         if self.stream:
             await self.stream.close()
@@ -79,7 +85,12 @@ class SubprocessStreamWriterWrapperContextManager(
         self.stream = StreamWriterWrapper(self.proc.stdin)
         return self.stream
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         if self.stream:
             await self.stream.close()
         await self.proc.wait()

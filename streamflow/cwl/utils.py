@@ -828,7 +828,7 @@ def process_embedded_tool(
             )
             inner_cwl_name_prefix = (
                 step_name
-                if context["version"] == "v1.0"
+                if isinstance(cwl_element, cwl_utils.parser.cwl_v1_0.WorkflowStep)
                 else posixpath.join(cwl_step_name, "run")
             )
         else:

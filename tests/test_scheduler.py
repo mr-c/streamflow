@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from collections.abc import Callable, MutableSequence
+from collections.abc import Callable, Container, MutableSequence
 from typing import cast
 
 import pytest
@@ -44,7 +44,7 @@ async def _notify_status_and_test(
 
 def _prepare_connector(
     context: StreamFlowContext,
-    location_memory: Callable[float, float] | None = None,
+    location_memory: Callable[[float], float] | None = None,
     num_jobs: int = 1,
 ) -> tuple[CWLHardwareRequirement, Target]:
     # Inject custom hardware to manipulate available resources
@@ -90,7 +90,7 @@ def service(context, deployment) -> str | None:
 
 @pytest.mark.asyncio
 async def test_bind_volumes(
-    chosen_deployment_types: MutableSequence[str], context: StreamFlowContext
+    chosen_deployment_types: Container[str], context: StreamFlowContext
 ) -> None:
     """Test the binding of volumes in stacked locations"""
     for deployment in ["docker", "local"]:
@@ -152,7 +152,7 @@ async def test_bind_volumes(
 
 @pytest.mark.asyncio
 async def test_binding_filter(
-    chosen_deployment_types: MutableSequence[str], context: StreamFlowContext
+    chosen_deployment_types: Container[str], context: StreamFlowContext
 ) -> None:
     """Test Binding Filter using a job with two targets both free. With the CustomBindingFilter the scheduling will choose the second target"""
     for deployment in ["docker", "local"]:
@@ -275,7 +275,7 @@ def test_hardware() -> None:
 
 @pytest.mark.asyncio
 async def test_multi_env(
-    chosen_deployment_types: MutableSequence[str], context: StreamFlowContext
+    chosen_deployment_types: Container[str], context: StreamFlowContext
 ) -> None:
     """Test scheduling two jobs on two different environments."""
     for deployment in ["docker", "local"]:
@@ -326,7 +326,7 @@ async def test_multi_env(
 
 @pytest.mark.asyncio
 async def test_multi_targets_one_job(
-    chosen_deployment_types: MutableSequence[str], context: StreamFlowContext
+    chosen_deployment_types: Container[str], context: StreamFlowContext
 ) -> None:
     """Test scheduling one jobs with two targets: Local and Docker Image. The job will be scheduled in the first"""
     for deployment in ["docker", "local"]:
@@ -379,7 +379,7 @@ async def test_multi_targets_one_job(
 
 @pytest.mark.asyncio
 async def test_multi_targets_two_jobs(
-    chosen_deployment_types: MutableSequence[str], context: StreamFlowContext
+    chosen_deployment_types: Container[str], context: StreamFlowContext
 ) -> None:
     """
     Test scheduling two jobs with two same targets: Local and Docker Image.

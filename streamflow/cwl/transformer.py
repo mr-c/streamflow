@@ -532,11 +532,11 @@ class LoopValueFromTransformer(ValueFromTransformer):
         self.loop_input_ports: MutableSequence[str] = []
         self.loop_source_port: str | None = None
 
-    def add_loop_input_port(self, name: str, port: Port):
+    def add_loop_input_port(self, name: str, port: Port) -> None:
         self.add_input_port(name + "-in", port)
         self.loop_input_ports.append(name)
 
-    def add_loop_source_port(self, name: str, port: Port):
+    def add_loop_source_port(self, name: str, port: Port) -> None:
         self.add_input_port(name + "-out", port)
         self.loop_source_port = name
 

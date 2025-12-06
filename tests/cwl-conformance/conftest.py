@@ -19,10 +19,12 @@ def pytest_cwl_execute_test(
     args = [
         "--streamflow-file",
         os.path.join(this_directory, "streamflow.yml"),
-        "--outdir",
-        config.outdir,
         processfile,
     ]
+
+    if config.outdir is not None:
+        args.extend(["--outdir", config.outdir])
+
     if jobfile is not None:
         args.append(jobfile)
 

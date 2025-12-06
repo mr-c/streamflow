@@ -53,12 +53,12 @@ from streamflow.workflow.token import (
     TerminationToken,
 )
 from streamflow.workflow.transformer import ManyToOneTransformer
-from tests.test_provenance import (
+from tests.utils.cwl import get_cwl_parser
+from tests.utils.utils import (
     create_and_run_step,
     inject_tokens,
     verify_dependency_tokens,
 )
-from tests.utils.cwl import get_cwl_parser
 from tests.utils.workflow import (
     CWL_VERSION,
     create_deploy_step,
@@ -74,7 +74,7 @@ async def _run_many_to_one_transformer(
     out_port: Port,
     workflow: Workflow,
     context: StreamFlowContext,
-):
+) -> None:
     step = workflow.create_step(
         cls=many_to_one_cls,
         name=f"{utils.random_name()}-scatter-size-transformer",
@@ -95,7 +95,7 @@ async def _run_many_to_one_transformer(
 
 
 @pytest.mark.asyncio
-async def test_cartesian_product_size_transformer(context: StreamFlowContext):
+async def test_cartesian_product_size_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for CartesianProductSizeTransformer"""
     workflow, (in_port_1, in_port_2, out_port) = await create_workflow(
         context, num_port=3
@@ -120,7 +120,7 @@ async def test_cartesian_product_size_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_clone_transformer(context: StreamFlowContext):
+async def test_clone_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for CloneTransformer"""
     workflow, (in_port, replicas_port, out_port) = await create_workflow(
         context, num_port=3
@@ -155,7 +155,9 @@ async def test_clone_transformer(context: StreamFlowContext):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("step_cls", [DefaultTransformer, DefaultRetagTransformer])
-async def test_default_transformer(context: StreamFlowContext, step_cls: type[Step]):
+async def test_default_transformer(
+    context: StreamFlowContext, step_cls: type[Step]
+) -> None:
     """Test token provenance for DefaultTransformer and DefaultRetagTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [Token("a")]
@@ -188,7 +190,7 @@ async def test_default_transformer(context: StreamFlowContext, step_cls: type[St
 
 
 @pytest.mark.asyncio
-async def test_dot_product_size_transformer(context: StreamFlowContext):
+async def test_dot_product_size_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for DotProductSizeTransformer"""
     workflow, (in_port_1, in_port_2, out_port) = await create_workflow(
         context, num_port=3
@@ -212,7 +214,7 @@ async def test_dot_product_size_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_execute_step(context: StreamFlowContext):
+async def test_cwl_execute_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLExecuteStep"""
     workflow, (in_port_schedule, in_port, out_port) = await create_workflow(
         context, num_port=3
@@ -281,7 +283,7 @@ async def test_cwl_execute_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_token_transformer(context: StreamFlowContext):
+async def test_cwl_token_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for CWLTokenTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     port_name = "test"
@@ -315,7 +317,7 @@ async def test_cwl_token_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_value_from_transformer(context: StreamFlowContext):
+async def test_value_from_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for ValueFromTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     deploy_step = create_deploy_step(workflow)
@@ -356,7 +358,7 @@ async def test_value_from_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_all_non_null_transformer(context: StreamFlowContext):
+async def test_all_non_null_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for AllNonNullTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token("a"), Token(None), Token("b")])]
@@ -381,7 +383,7 @@ async def test_all_non_null_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_first_non_null_transformer(context: StreamFlowContext):
+async def test_first_non_null_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for FirstNonNullTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token(None), Token("a")])]
@@ -406,7 +408,7 @@ async def test_first_non_null_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_forward_transformer(context: StreamFlowContext):
+async def test_forward_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for ForwardTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token("a")])]
@@ -431,7 +433,7 @@ async def test_forward_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_list_to_element_transformer(context: StreamFlowContext):
+async def test_list_to_element_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for ListToElementTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token("a")])]
@@ -456,7 +458,7 @@ async def test_list_to_element_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_only_non_null_transformer(context: StreamFlowContext):
+async def test_only_non_null_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for OnlyNonNullTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token(None), Token("a")])]
@@ -481,7 +483,7 @@ async def test_only_non_null_transformer(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_conditional_step(context: StreamFlowContext):
+async def test_cwl_conditional_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLConditionalStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     port_name = "test"
@@ -510,7 +512,7 @@ async def test_cwl_conditional_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_empty_scatter_conditional_step(context: StreamFlowContext):
+async def test_cwl_empty_scatter_conditional_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLEmptyScatterConditionalStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     port_name = "test"
@@ -538,7 +540,7 @@ async def test_cwl_empty_scatter_conditional_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_loop_conditional_step(context: StreamFlowContext):
+async def test_cwl_loop_conditional_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLLoopConditionalStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     port_name = "test"
@@ -567,7 +569,7 @@ async def test_cwl_loop_conditional_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_transfer_step(context: StreamFlowContext):
+async def test_cwl_transfer_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLTransferStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     deploy_step = create_deploy_step(workflow)
@@ -601,7 +603,7 @@ async def test_cwl_transfer_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_cwl_input_injector_step(context: StreamFlowContext):
+async def test_cwl_input_injector_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLInputInjectorStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     deploy_step = create_deploy_step(workflow)
@@ -632,7 +634,7 @@ async def test_cwl_input_injector_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_empty_scatter_conditional_step(context: StreamFlowContext):
+async def test_empty_scatter_conditional_step(context: StreamFlowContext) -> None:
     """Test token provenance for CWLEmptyScatterConditionalStep"""
     workflow, (in_port, out_port) = await create_workflow(context)
     token_list = [ListToken([Token(i), Token(i * 100)]) for i in range(1, 5)]
@@ -662,7 +664,7 @@ async def test_empty_scatter_conditional_step(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_list_merge_combinator(context: StreamFlowContext):
+async def test_list_merge_combinator(context: StreamFlowContext) -> None:
     """Test token provenance for ListMergeCombinator"""
     workflow, (in_port, out_port) = await create_workflow(context)
     port_name = "test"
@@ -700,7 +702,7 @@ async def test_list_merge_combinator(context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_loop_value_from_transformer(context: StreamFlowContext):
+async def test_loop_value_from_transformer(context: StreamFlowContext) -> None:
     """Test token provenance for LoopValueFromTransformer"""
     workflow, (in_port, out_port) = await create_workflow(context)
     deploy_step = create_deploy_step(workflow)
@@ -746,7 +748,9 @@ async def test_loop_value_from_transformer(context: StreamFlowContext):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("step_cls", [CWLLoopOutputAllStep, CWLLoopOutputLastStep])
-async def test_cwl_loop_output(context: StreamFlowContext, step_cls: type[Step]):
+async def test_cwl_loop_output(
+    context: StreamFlowContext, step_cls: type[Step]
+) -> None:
     """Test token provenance for CWLLoopOutput"""
     workflow, (in_port, out_port) = await create_workflow(context)
 
@@ -776,7 +780,7 @@ async def test_cwl_loop_output(context: StreamFlowContext, step_cls: type[Step])
 
 
 @pytest.mark.asyncio
-async def test_nested_crossproduct_combinator(context: StreamFlowContext):
+async def test_nested_crossproduct_combinator(context: StreamFlowContext) -> None:
     """Test token provenance for CWL nested_crossproduct feature"""
     workflow, (in_port_1, in_port_2, out_port_1, out_port_2) = await create_workflow(
         context, num_port=4

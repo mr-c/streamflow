@@ -7,12 +7,13 @@ from streamflow.config.schema import SfSchema
 from streamflow.config.validator import SfValidator
 from streamflow.core.exception import WorkflowDefinitionException
 from streamflow.main import build_context
-from streamflow.persistence import SqliteDatabase
-from streamflow.recovery import DefaultCheckpointManager, DefaultFailureManager
-from streamflow.scheduling import DefaultScheduler
+from streamflow.persistence.sqlite import SqliteDatabase
+from streamflow.recovery.checkpoint_manager import DefaultCheckpointManager
+from streamflow.recovery.failure_manager import DefaultFailureManager
+from streamflow.scheduling.scheduler import DefaultScheduler
 
 
-def test_cwl_workflow():
+def test_cwl_workflow() -> None:
     """Check that CWL workflows are supported."""
     config = {
         "version": "v1.0",
@@ -26,7 +27,7 @@ def test_cwl_workflow():
     SfValidator().validate(config)
 
 
-def test_cwl_workflow_fail_missing_file():
+def test_cwl_workflow_fail_missing_file() -> None:
     """Check that validation fails when the `file` clause is not specified for a CWL workflow."""
     config = {
         "version": "v1.0",
@@ -41,7 +42,7 @@ def test_cwl_workflow_fail_missing_file():
         SfValidator().validate(config)
 
 
-def test_cwl_workflow_fail_unsupported_property():
+def test_cwl_workflow_fail_unsupported_property() -> None:
     """Check that validation fails when an unsupported property is specified for a CWL workflow."""
     config = {
         "version": "v1.0",
@@ -60,7 +61,7 @@ def test_cwl_workflow_fail_unsupported_property():
         SfValidator().validate(config)
 
 
-def test_cwl_workflow_missing_settings():
+def test_cwl_workflow_missing_settings() -> None:
     """Check that validation does not fail when the `settings` clause is not specified for a CWL workflow."""
     config = {
         "version": "v1.0",
@@ -74,7 +75,7 @@ def test_cwl_workflow_missing_settings():
     SfValidator().validate(config)
 
 
-def test_ext_support():
+def test_ext_support() -> None:
     """Check that all extension points are supported."""
     config = {
         "version": "v1.0",
@@ -121,7 +122,7 @@ def test_ext_support():
     SfValidator().validate(config)
 
 
-def test_ext_support_deprecated():
+def test_ext_support_deprecated() -> None:
     """Check that all deprecated extension points are still supported."""
     config = {
         "version": "v1.0",
@@ -150,7 +151,7 @@ def test_ext_support_deprecated():
     SfValidator().validate(config)
 
 
-def test_ext_fail_unsupported_extension_point():
+def test_ext_fail_unsupported_extension_point() -> None:
     """Check that validation fails when an unsupported extension point is specified."""
     config = {
         "version": "v1.0",
@@ -166,7 +167,7 @@ def test_ext_fail_unsupported_extension_point():
         SfValidator().validate(config)
 
 
-def test_ext_fail_unsupoorted_type():
+def test_ext_fail_unsupoorted_type() -> None:
     """Check that validation fails when an extension point with unsupported type is specified."""
     config = {
         "version": "v1.0",
@@ -182,7 +183,7 @@ def test_ext_fail_unsupoorted_type():
         SfValidator().validate(config)
 
 
-def test_schema_generation():
+def test_schema_generation() -> None:
     """Check that the `streamflow schema` command generates a correct JSON Schema."""
     assert (
         hashlib.sha256(SfSchema().dump("v1.0", False).encode()).hexdigest()
@@ -194,13 +195,13 @@ def test_schema_generation():
     )
 
 
-def test_schema_generation_fail_invalid_version():
+def test_schema_generation_fail_invalid_version() -> None:
     """Check that the `streamflow schema` command fails when an invalid version is passed."""
     with raises(WorkflowDefinitionException):
         SfSchema().dump("invalid", False)
 
 
-def test_target_fail_unsupported_property():
+def test_target_fail_unsupported_property() -> None:
     """Check that validation fails when an unsupported property is specified in the `target` clause."""
     config = {
         "version": "v1.0",
@@ -230,7 +231,7 @@ def test_target_fail_unsupported_property():
         SfValidator().validate(config)
 
 
-def test_version_fail_invalid():
+def test_version_fail_invalid() -> None:
     """Check that validation fails when `version` is not supported."""
     config = {
         "version": "v1000.0",
@@ -245,7 +246,7 @@ def test_version_fail_invalid():
         SfValidator().validate(config)
 
 
-def test_version_fail_missing():
+def test_version_fail_missing() -> None:
     """Check that validation fails when the `version` clause is not specified."""
     config = {
         "workflows": {
@@ -259,7 +260,7 @@ def test_version_fail_missing():
         SfValidator().validate(config)
 
 
-def test_workflow_fail_unsupported_type():
+def test_workflow_fail_unsupported_type() -> None:
     """Check that validation fails when a workflow with unsupported type is specified."""
     config = {
         "version": "v1.0",
@@ -274,7 +275,7 @@ def test_workflow_fail_unsupported_type():
         SfValidator().validate(config)
 
 
-def test_sf_context():
+def test_sf_context() -> None:
     assert set(SfSchema().get_config("v1.0").contents["properties"].keys()) == {
         "bindingFilters",
         "checkpointManager",

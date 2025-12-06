@@ -13,6 +13,7 @@ from importlib.resources import files
 from math import ceil, floor
 from pathlib import Path
 from shutil import which
+from types import TracebackType
 from typing import Any, AsyncContextManager, cast
 
 import yaml
@@ -143,7 +144,12 @@ class KubernetesResponseWrapperContextManager(AsyncContextManager[StreamWrapper]
         self.response = KubernetesResponseWrapper(await response.__aenter__())
         return self.response
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         if self.response:
             await self.response.close()
 

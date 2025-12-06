@@ -10,9 +10,10 @@ from asyncssh import SSHClient, SSHClientConnection
 from streamflow.core.data import StreamWrapper
 from streamflow.core.deployment import Connector, ExecutionLocation
 from streamflow.core.scheduling import AvailableLocation, Hardware
-from streamflow.deployment.connector import LocalConnector, SSHConnector
+from streamflow.deployment.connector.local import LocalConnector
 from streamflow.deployment.connector.ssh import (
     SSHConfig,
+    SSHConnector,
     SSHContext,
     get_param_from_file,
     parse_hostname,
@@ -72,7 +73,7 @@ class FailureConnector(Connector):
         self,
         location: ExecutionLocation,
         command: MutableSequence[str],
-        environment: MutableMapping[str, str] = None,
+        environment: MutableMapping[str, str] | None = None,
         workdir: str | None = None,
         stdin: int | str | None = None,
         stdout: int | str = asyncio.subprocess.STDOUT,

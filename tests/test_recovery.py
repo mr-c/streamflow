@@ -4,7 +4,7 @@ import os
 import posixpath
 import tempfile
 import uuid
-from collections.abc import AsyncGenerator, MutableMapping, MutableSequence
+from collections.abc import AsyncGenerator, Container, MutableMapping
 from typing import Any
 
 import pytest
@@ -92,7 +92,7 @@ async def _create_file(
 
 @pytest_asyncio.fixture(scope="module")
 async def fault_tolerant_context(
-    chosen_deployment_types: MutableSequence[str],
+    chosen_deployment_types: Container[str],
 ) -> AsyncGenerator[StreamFlowContext, Any]:
     _context = build_context(
         {
@@ -138,7 +138,7 @@ async def test_execute(
     token_type: str,
 ):
     deployment_t = "local-fs-volatile"
-    workflow = next(iter(await create_workflow(fault_tolerant_context, num_port=0)))
+    workflow, _ = await create_workflow(fault_tolerant_context, num_port=0)
     translator = RecoveryTranslator(workflow)
     deployment_config = await get_deployment_config(
         fault_tolerant_context, deployment_t
@@ -259,10 +259,10 @@ async def test_execute(
 
 
 @pytest.mark.asyncio
-async def test_scatter(fault_tolerant_context: StreamFlowContext):
+async def test_scatter(fault_tolerant_context: StreamFlowContext) -> None:
     num_of_failures = 1
     deployment_t = "local-fs-volatile"
-    workflow = next(iter(await create_workflow(fault_tolerant_context, num_port=0)))
+    workflow, _ = await create_workflow(fault_tolerant_context, num_port=0)
     translator = RecoveryTranslator(workflow)
     deployment_config = await get_deployment_config(
         fault_tolerant_context, deployment_t
@@ -354,13 +354,13 @@ async def test_scatter(fault_tolerant_context: StreamFlowContext):
 
 
 @pytest.mark.asyncio
-async def test_synchro(fault_tolerant_context: StreamFlowContext):
+async def test_synchro(fault_tolerant_context: StreamFlowContext) -> None:
     step_t = "execute"
     num_of_steps = 1
     num_of_failures = 1
     token_t = "file"
     deployment_t = "local-fs-volatile"
-    workflow = next(iter(await create_workflow(fault_tolerant_context, num_port=0)))
+    workflow, _ = await create_workflow(fault_tolerant_context, num_port=0)
     translator = RecoveryTranslator(workflow)
     deployment_config = await get_deployment_config(
         fault_tolerant_context, deployment_t

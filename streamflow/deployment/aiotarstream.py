@@ -13,6 +13,7 @@ import tarfile
 import time
 from abc import ABC
 from builtins import open as bltn_open
+from types import TracebackType
 from typing import Any, cast
 
 from typing_extensions import Self
@@ -215,7 +216,12 @@ class FileStreamReaderWrapper(StreamWrapper):
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         await self.close()
 
     async def close(self):
@@ -506,7 +512,12 @@ class AioTarStream:
             self.closed = True
             raise
 
-    async def __aexit__(self, exc_type, value, traceback):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         if exc_type is None:
             await self.close()
         else:

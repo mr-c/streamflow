@@ -126,17 +126,17 @@ def _adjust_default_ports(
     transformer_prefix: str,
     dependent_ports: MutableSequence[str] | None = None,
 ) -> None:
-    dependent_ports = dependent_ports or {}
+    dependent_ports = dependent_ports or []
     if filtered_ports := {
         port_name: port
         for port_name, port in input_ports.items()
         if port_name not in default_ports.keys() and port_name not in dependent_ports
     }:
         for default_name in default_ports.keys():
-            transformer = workflow.steps.get(
+            transformer = workflow.steps[
                 posixpath.join(step_name, default_name)
                 + f"-{transformer_prefix}-default-transformer"
-            )
+            ]
             for port_name, port in filtered_ports.items():
                 transformer.add_input_port(
                     (
@@ -230,9 +230,7 @@ def _create_command_output_processor(
         | cwl_utils.parser.InputSchema
         | cwl_utils.parser.OutputSchema
         | MutableSequence[
-            str,
-            cwl_utils.parser.OutputSchema,
-            cwl_utils.parser.InputSchema,
+            str | cwl_utils.parser.OutputSchema | cwl_utils.parser.InputSchema,
         ]
     ),
     cwl_element: (
@@ -297,6 +295,7 @@ def _create_command_output_processor(
         if (type_name := getattr(port_type, "name", port_name)).startswith("_:"):
             type_name = port_name
         record_name_prefix = utils.get_name(posixpath.sep, posixpath.sep, type_name)
+        output_binding = _get_output_binding(cwl_element)
         return CWLObjectCommandOutputProcessor(
             name=port_name,
             workflow=workflow,
@@ -322,11 +321,7 @@ def _create_command_output_processor(
             },
             expression_lib=expression_lib,
             full_js=full_js,
-            output_eval=(
-                cwl_element.outputBinding.outputEval
-                if getattr(cwl_element, "outputBinding", None)
-                else None
-            ),
+            output_eval=output_binding.outputEval if output_binding else None,
             single=single,
         )
     elif isinstance(port_type, MutableSequence):
@@ -402,7 +397,7 @@ def _create_command_output_processor(
             else:
                 return processors[0]
     # Complex type -> Extract from schema definitions and propagate
-    elif "#" in port_type:
+    elif isinstance(port_type, str) and "#" in port_type:
         return _create_command_output_processor(
             port_name=port_name,
             workflow=workflow,
@@ -1062,7 +1057,9 @@ def _create_token_transformer(
     name: str,
     port_name: str,
     workflow: CWLWorkflow,
-    cwl_element: cwl_utils.parser.InputParameter,
+    cwl_element: (
+        cwl_utils.parser.CommandInputParameter | cwl_utils.parser.WorkflowInputParameter
+    ),
     cwl_name_prefix: str,
     schema_def_types: MutableMapping[str, Any],
     context: MutableMapping[str, Any],
@@ -1213,6 +1210,27 @@ def _get_loop(
         }
     else:
         return None
+
+
+def _get_output_binding(
+    cwl_element: (
+        cwl_utils.parser.CommandOutputParameter
+        | None
+        | cwl_utils.parser.OutputRecordField
+        | cwl_utils.parser.ExpressionToolOutputParameter
+    ),
+) -> cwl_utils.parser.CommandOutputBinding:
+    return (
+        cwl_element.outputBinding
+        if isinstance(cwl_element, get_args(cwl_utils.parser.CommandOutputParameter))
+        or isinstance(cwl_element, get_args(cwl_utils.parser.CommandOutputRecordField))
+        or isinstance(
+            cwl_element,
+            cwl_utils.parser.cwl_v1_0.OutputRecordField
+            | cwl_utils.parser.cwl_v1_0.ExpressionToolOutputParameter,
+        )
+        else None
+    )
 
 
 def _get_path(element_id: str) -> str:
@@ -1506,6 +1524,7 @@ def create_command_output_processor_base(
     requirements = context["hints"] | context["requirements"]
     expression_lib, full_js = _process_javascript_requirement(requirements)
     # Create OutputProcessor
+    output_binding = _get_output_binding(cwl_element)
     if "File" in port_type:
         return CWLCommandOutputProcessor(
             name=port_name,
@@ -1515,19 +1534,11 @@ def create_command_output_processor_base(
             expression_lib=expression_lib,
             file_format=getattr(cwl_element, "format", None),
             full_js=full_js,
-            glob=(
-                cwl_element.outputBinding.glob
-                if getattr(cwl_element, "outputBinding", None)
-                else None
-            ),
+            glob=output_binding.glob if output_binding else None,
             load_contents=_get_load_contents(cwl_element),
             load_listing=_get_load_listing(cwl_element, context),
             optional=optional,
-            output_eval=(
-                cwl_element.outputBinding.outputEval
-                if getattr(cwl_element, "outputBinding", None)
-                else None
-            ),
+            output_eval=output_binding.outputEval if output_binding else None,
             secondary_files=_get_secondary_files(
                 cwl_element=getattr(cwl_element, "secondaryFiles", None),
                 default_required=False,
@@ -1543,19 +1554,11 @@ def create_command_output_processor_base(
             token_type=port_type[0] if len(port_type) == 1 else port_type,
             expression_lib=expression_lib,
             full_js=full_js,
-            glob=(
-                cwl_element.outputBinding.glob
-                if getattr(cwl_element, "outputBinding", None)
-                else None
-            ),
+            glob=output_binding.glob if output_binding else None,
             load_contents=_get_load_contents(cwl_element),
             load_listing=_get_load_listing(cwl_element, context),
             optional=optional,
-            output_eval=(
-                cwl_element.outputBinding.outputEval
-                if getattr(cwl_element, "outputBinding", None)
-                else None
-            ),
+            output_eval=output_binding.outputEval if output_binding else None,
             single=single,
         )
 
@@ -1657,7 +1660,10 @@ class CWLTranslator:
         self,
         workflow: Workflow,
         cwl_element: cwl_utils.parser.Process,
-        element_input: cwl_utils.parser.InputParameter,
+        element_input: (
+            cwl_utils.parser.CommandInputParameter
+            | cwl_utils.parser.WorkflowInputParameter
+        ),
         global_name: str,
         port_name: str,
         default_ports: MutableMapping[str, Port],
@@ -1734,7 +1740,7 @@ class CWLTranslator:
         self,
         workflow: Workflow,
         global_name: str,
-        port_name,
+        port_name: str,
         port: Port,
         output_directory: str,
         value: Any,
@@ -2075,12 +2081,11 @@ class CWLTranslator:
                 port_target = None
             # In CWL <= v1.2, ExpressionTool output is never type-checked
             if isinstance(
-                cwl_element, get_args(cwl_utils.parser.ExpressionTool)
-            ) and context["version"] in [
-                "v1.0",
-                "v1.1",
-                "v1.2",
-            ]:
+                cwl_element,
+                cwl_utils.parser.cwl_v1_0.ExpressionTool
+                | cwl_utils.parser.cwl_v1_1.ExpressionTool
+                | cwl_utils.parser.cwl_v1_2.ExpressionTool,
+            ):
                 if isinstance(element_output.type_, MutableSequence):
                     port_type = element_output.type_
                     if "null" not in port_type:
@@ -2244,7 +2249,11 @@ class CWLTranslator:
             link_merge = element_output.linkMerge
             pick_value = (
                 None
-                if context["version"] in ["v1.0", "v1.1"]
+                if isinstance(
+                    element_output,
+                    cwl_utils.parser.cwl_v1_0.WorkflowOutputParameter
+                    | cwl_utils.parser.cwl_v1_1.WorkflowOutputParameter,
+                )
                 else element_output.pickValue
             )
             # If outputSource element is a list, the output element can depend on multiple ports
@@ -2550,7 +2559,13 @@ class CWLTranslator:
         # Process condition
         conditional_step = None
         cwl_condition = (
-            None if context["version"] in ["v1.0", "v1.1"] else cwl_element.when
+            None
+            if isinstance(
+                cwl_element,
+                cwl_utils.parser.cwl_v1_0.WorkflowStep
+                | cwl_utils.parser.cwl_v1_1.WorkflowStep,
+            )
+            else cwl_element.when
         )
         if cwl_condition is not None:
             if loop is not None:
@@ -2924,10 +2939,12 @@ class CWLTranslator:
             link_merge = element_input.linkMerge
             pick_value = (
                 None
-                if context["version"] in ["v1.0", "v1.1"]
-                else cast(
-                    cwl_utils.parser.cwl_v1_2.WorkflowStepInput, element_input
-                ).pickValue
+                if isinstance(
+                    element_input,
+                    cwl_utils.parser.cwl_v1_0.WorkflowStepInput
+                    | cwl_utils.parser.cwl_v1_1.WorkflowStepInput,
+                )
+                else element_input.pickValue
             )
             # If source element is a list, the input element can depend on multiple ports
             if isinstance(element_source, MutableSequence):

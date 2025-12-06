@@ -400,11 +400,7 @@ class CWLCommandOutputProcessor(CommandOutputProcessor):
             full_js=row["full_js"],
             glob=row["glob"],
             load_contents=row["load_contents"],
-            load_listing=(
-                LoadListing(row["load_listing"])
-                if row["load_listing"] is not None
-                else None
-            ),
+            load_listing=LoadListing(row["load_listing"]),
             optional=row["optional"],
             output_eval=row["output_eval"],
             secondary_files=[

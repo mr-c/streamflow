@@ -6,7 +6,7 @@ import os
 import posixpath
 from collections.abc import Iterable, MutableMapping, MutableSequence
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from typing_extensions import Self
 
@@ -51,6 +51,7 @@ from streamflow.workflow.combinator import (
 )
 from streamflow.workflow.port import ConnectorPort, JobPort
 from streamflow.workflow.step import (
+    Combinator,
     CombinatorStep,
     DefaultCommandOutputProcessor,
     DeployStep,
@@ -69,6 +70,9 @@ if TYPE_CHECKING:
     from streamflow.core.context import StreamFlowContext
 
 CWL_VERSION = "v1.2"
+
+
+W = TypeVar("W", bound=Workflow)
 
 
 async def _delete_job_workdir(context: StreamFlowContext, job: Job) -> None:
@@ -156,8 +160,8 @@ def create_schedule_step(
     workflow: Workflow,
     deploy_steps: Iterable[DeployStep],
     cls: type[ScheduleStep] | None = None,
-    binding_config: BindingConfig = None,
-    hardware_requirement: HardwareRequirement = None,
+    binding_config: BindingConfig | None = None,
+    hardware_requirement: HardwareRequirement | None = None,
     name_prefix: str | None = None,
     **arguments,
 ) -> ScheduleStep:
@@ -197,10 +201,11 @@ def create_schedule_step(
 async def create_workflow(
     context: StreamFlowContext,
     num_port: int = 2,
-    type_: str = "cwl",
+    type_: type[W] = CWLWorkflow,
     save: bool = True,
 ) -> tuple[Workflow, tuple[Port, ...]]:
-    if type_ == "cwl":
+    workflow: Workflow
+    if type_ == CWLWorkflow:
         workflow = CWLWorkflow(
             context=context,
             name=utils.random_name(),
@@ -233,6 +238,7 @@ def get_combinator_step(
 ) -> CombinatorStep:
     combinator_step_cls = CombinatorStep
     name = utils.random_name()
+    combinator: Combinator
     match combinator_type:
         case "cartesian_product_combinator":
             combinator = get_cartesian_product_combinator(workflow, name)
@@ -314,7 +320,7 @@ def get_nested_crossproduct(
     return combinator
 
 
-def random_job_name(step_name: str | None = None):
+def random_job_name(step_name: str | None = None) -> str:
     step_name = step_name or utils.random_name()
     return os.path.join(posixpath.sep, step_name, "0.0")
 
@@ -735,7 +741,7 @@ class InjectorFailureScheduleStep(ScheduleStep):
         connector: Connector,
         locations: MutableSequence[ExecutionLocation],
         job: Job,
-    ):
+    ) -> None:
         # Counts the number of step rollbacks
         loading_context = DefaultDatabaseLoadingContext()
         workflows = await asyncio.gather(
