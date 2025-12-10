@@ -1107,9 +1107,12 @@ class CWLCommandTokenProcessor(CommandTokenProcessor):
         if self.processor is not None:
             return self.processor.check_type(token)
         else:
-            return self.token_type == utils.infer_type_from_token(
-                get_token_value(token)
-            )
+            if self.token_type != (
+                inferred_type := utils.infer_type_from_token(get_token_value(token))
+            ):
+                if inferred_type != "long" or self.token_type != "double":  # nosec
+                    return False
+            return True
 
     @classmethod
     async def _load(
@@ -1198,7 +1201,12 @@ class CWLForwardCommandTokenProcessor(CommandTokenProcessor):
         )
 
     def check_type(self, token: Token) -> bool:
-        return self.token_type == utils.infer_type_from_token(get_token_value(token))
+        if self.token_type != (
+            inferred_type := utils.infer_type_from_token(get_token_value(token))
+        ):
+            if inferred_type != "long" or self.token_type != "double":  # nosec
+                return False
+        return True
 
 
 class CWLObjectCommandTokenProcessor(ObjectCommandTokenProcessor):
